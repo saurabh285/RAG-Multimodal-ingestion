@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Debug: {{ filename }}</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    .chunk { border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; }
+    .meta { color: #666; font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .text { white-space: pre-wrap; }
+    .images img { max-width: 200px; margin: 0.5rem 0.5rem 0 0; }
+  </style>
+</head>
+<body>
+  <h1>{{ filename }} (document_id={{ document_id }})</h1>
+  {% for chunk in chunks %}
+  <div class="chunk">
+    <div class="meta">chunk_id={{ chunk.id }} | pages {{ chunk.page_start }}-{{ chunk.page_end }}</div>
+    <div class="text">{{ chunk.text }}</div>
+    <div class="images">
+      {% for path in chunk.image_paths %}
+      <img src="../{{ path }}">
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</body>
+</html>

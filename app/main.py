@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.database import Base, engine, get_db
 from app.models import Chunk, Document
-from app import images, parser
+from app import debug_view, images, parser
 
 app = FastAPI(title="MultiModal RAG Ingestion")
 
@@ -22,6 +22,7 @@ def health():
 def ingest(
     file: UploadFile = File(...),
     year: int = Form(...),
+    debug: bool = Form(False),
     db: Session = Depends(get_db),
 ):
     if file.content_type != "application/pdf":
@@ -49,18 +50,24 @@ def ingest(
     saved_images = images.save_images(document.id, extracted_images)
     images.associate_images_to_chunks(parsed_chunks, saved_images)
 
+    chunk_rows = []
     for chunk in parsed_chunks:
-        db.add(
-            Chunk(
-                document_id=document.id,
-                text=chunk.text,
-                page_start=chunk.page_start,
-                page_end=chunk.page_end,
-                image_paths=chunk.image_paths,
-            )
+        row = Chunk(
+            document_id=document.id,
+            text=chunk.text,
+            page_start=chunk.page_start,
+            page_end=chunk.page_end,
+            image_paths=chunk.image_paths,
         )
+        db.add(row)
+        chunk_rows.append(row)
 
     db.commit()
+
+    if debug:
+        for row in chunk_rows:
+            db.refresh(row)
+        debug_view.render_debug_html(document.id, document.filename, chunk_rows)
 
     return {
         "document_id": document.id,
