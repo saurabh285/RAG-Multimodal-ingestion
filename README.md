@@ -42,9 +42,16 @@ curl -X POST http://localhost:8000/ingest \
 Takes well under a minute and exercises the full pipeline — text, images,
 and the debug viewer.
 
-If you'd rather not run anything at all first, `samples/example_output/`
-has a pre-generated example (`debug.html` + its images) already checked into
-the repo, from a real run of this pipeline.
+If you'd rather not run anything at all first, two pre-generated examples
+are already checked into the repo — open either directly in a browser:
+
+- **`samples/example_output/debug.html`** — this project's actual delivered
+  pipeline (Docling), run on the 15-page sample.
+- **`samples/example_output_lightweight/debug.html`** — the lightweight
+  comparison pipeline (see "Known limitations" below), run on the full
+  674-page `report_2022.pdf`. Not the delivered approach, included so you
+  can see the speed/quality trade-off directly instead of just reading
+  about it.
 
 ### Ingesting a full report
 
@@ -218,6 +225,8 @@ real reports, and end-to-end through Docker.
     available, a plain gradient background swatch got kept as an "image"
     where Docling's classifier would drop it. This isn't a hidden
     fallback — it's a documented experiment, not part of the delivered app.
+    See it for yourself in `samples/example_output_lightweight/debug.html`
+    (checked into the repo, no need to run anything).
 - **Logo filtering is a heuristic, not perfect.** Repeated logos (headers,
   footers, cover branding used many times) are reliably caught by a
   duplicate-image check. A one-off logo that only appears once in the whole
