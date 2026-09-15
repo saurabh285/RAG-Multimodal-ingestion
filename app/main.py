@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.database import Base, engine, get_db
 from app.models import Chunk, Document
-from app import parser
+from app import images, parser
 
 app = FastAPI(title="MultiModal RAG Ingestion")
 
@@ -34,6 +34,7 @@ def ingest(
         try:
             doc = parser.convert(tmp.name)
             parsed_chunks = parser.build_chunks(doc)
+            extracted_images = images.extract_images(doc)
         except Exception as exc:
             raise HTTPException(
                 status_code=500, detail=f"Failed to parse PDF: {exc}"
@@ -44,6 +45,9 @@ def ingest(
     )
     db.add(document)
     db.flush()
+
+    saved_images = images.save_images(document.id, extracted_images)
+    images.associate_images_to_chunks(parsed_chunks, saved_images)
 
     for chunk in parsed_chunks:
         db.add(

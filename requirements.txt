@@ -3,6 +3,6 @@ uvicorn[standard]
 python-multipart
 sqlalchemy
 psycopg2-binary
-docling
+docling==2.69.1
 jinja2
 pillow
