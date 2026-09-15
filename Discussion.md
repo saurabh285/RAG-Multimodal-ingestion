@@ -76,21 +76,12 @@ image-to-text ratio, or using the same picture classifier already in this
 pipeline to detect chart-dense pages) and route them to a page-image index
 instead of, or in addition to, normal chunking.
 
-On the compute point specifically: everything above assumes GPU-backed
-inference is available. I developed this on an 8GB Mac with no dedicated
-GPU, and a full report already takes ~30+ minutes on CPU with the current
-(comparatively lighter) pipeline — a ColPali-style approach, which runs a
-VLM over every page image, would be considerably more expensive still on
-the same hardware. See the README's "Known limitations" section for how
-that constraint shaped what I could actually validate here.
-
-To make the "would a lighter approach work?" question concrete rather
-than hypothetical, I built a throwaway comparison pipeline
-(`experiments/lightweight_pipeline.py`) using plain PyMuPDF text/image
-extraction instead of Docling — no ML at all. On the full `report_2022.pdf`:
-6.2 seconds versus Docling's 30+ minutes (and inability to finish on this
-machine). The cost is real too — chunking is cruder (no structure
-awareness) and at least one clearly non-useful image (a flat gradient
-background) got kept, since there's no classifier to catch it. That's the
-ColPali trade-off in miniature: strip out the ML, get speed, lose the
-judgment calls the ML was making.
+To make the speed/fidelity trade-off concrete rather than hypothetical, I
+built a throwaway comparison pipeline (`experiments/lightweight_pipeline.py`,
+plain PyMuPDF, no ML) and ran it against the same full report: 6 seconds
+versus Docling's 30+ minutes — but cruder chunking and at least one
+clearly useless image (a flat background swatch) kept, since there's no
+classifier to catch it. That's the ColPali trade-off in miniature: strip
+out the ML, get speed, lose the judgment calls the ML was making. See the
+README's "Known limitations" for the full compute story (no GPU available
+while building this, and what that meant for validation).

@@ -28,7 +28,7 @@ the easiest way to try it) are at `http://localhost:8000/docs`.
 
 ### Quick sanity check (recommended first)
 
-A full report in `knowledge/` is 300-700+ pages and takes **~30+ minutes** to
+A full report in `knowledge/` is 660-680 pages and takes **~30+ minutes** to
 ingest (see "Known limitations" below) — not something you want to wait on
 just to check the app works. Use the small 15-page sample instead:
 
@@ -78,10 +78,9 @@ With `debug=true`, a file is also written to `data/debug/{document_id}.html`
 — open it in a browser to see every chunk with its page numbers and any
 images attached to it.
 
-The numbers above are real (from parsing `report_2022.pdf`), but see "Memory
-is the real wall on this machine" under **Known limitations** — I could not
-get the full multimodal pipeline to complete end-to-end on a full report
-within this machine's available memory, only the text-only parsing stage.
+The numbers above are real (from parsing `report_2022.pdf`) — but see
+**Known limitations** for what actually completed end-to-end vs. what
+didn't on this machine.
 
 ## Database schema
 
@@ -122,13 +121,13 @@ fixture). Tests use an isolated SQLite file, not the real Postgres database,
 so they don't need Docker running.
 
 This isn't exhaustive coverage — there's no test against a full real report
-(that's covered separately, manually, given the ~30 min runtime), and no
-test asserting exact chunk boundaries. It covers the logic most likely to
-have silent bugs: filtering decisions and page/chunk matching.
+(see **Known limitations** for how far that actually got), and no test
+asserting exact chunk boundaries. It covers the logic most likely to have
+silent bugs: filtering decisions and page/chunk matching.
 
-Beyond the automated tests, I also verified the full pipeline by hand at
-each build stage (text-only, then images, then the debug viewer) against
-real reports, and end-to-end through Docker.
+Beyond the automated tests, I also verified each build stage by hand
+(text-only, then images, then the debug viewer) against real reports, and
+end-to-end through Docker.
 
 ## Error handling & observability
 

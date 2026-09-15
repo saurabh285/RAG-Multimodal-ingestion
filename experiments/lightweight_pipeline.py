@@ -5,7 +5,9 @@ extraction) over one full report, reusing the same noise-filter/dedup/
 association/debug-viewer code from app/ so the output is directly
 comparable to a Docling-based debug HTML.
 
-Usage: python experiments/lightweight_pipeline.py knowledge/report_2022.pdf
+Usage:
+    pip install -r requirements-dev.txt
+    python experiments/lightweight_pipeline.py knowledge/report_2022.pdf
 """
 import io
 import sys
