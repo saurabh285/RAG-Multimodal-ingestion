@@ -205,6 +205,19 @@ real reports, and end-to-end through Docker.
     choice comes at a real, hit-the-ceiling cost, and I'd rather say that
     plainly than imply the full pipeline was validated at full scale when
     it wasn't.
+  - **I went further and built a full lightweight pipeline** (text +
+    images + debug HTML, not just raw text) —
+    [`experiments/lightweight_pipeline.py`](experiments/lightweight_pipeline.py),
+    reusing this project's actual noise-filter/dedup/association/debug-viewer
+    code so the comparison is fair. Run against the full `report_2022.pdf`
+    (674 pages): **6.2 seconds**, 594 chunks, 76 images kept — versus
+    Docling's 30+ minutes and inability to finish at all on this machine.
+    Chunk quality is visibly cruder (fixed character-count splitting, no
+    heading/structure awareness, so chunks span pages irregularly). Image
+    quality is mixed: real photos extracted fine, but with no ML classifier
+    available, a plain gradient background swatch got kept as an "image"
+    where Docling's classifier would drop it. This isn't a hidden
+    fallback — it's a documented experiment, not part of the delivered app.
 - **Logo filtering is a heuristic, not perfect.** Repeated logos (headers,
   footers, cover branding used many times) are reliably caught by a
   duplicate-image check. A one-off logo that only appears once in the whole

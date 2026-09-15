@@ -83,3 +83,14 @@ GPU, and a full report already takes ~30+ minutes on CPU with the current
 VLM over every page image, would be considerably more expensive still on
 the same hardware. See the README's "Known limitations" section for how
 that constraint shaped what I could actually validate here.
+
+To make the "would a lighter approach work?" question concrete rather
+than hypothetical, I built a throwaway comparison pipeline
+(`experiments/lightweight_pipeline.py`) using plain PyMuPDF text/image
+extraction instead of Docling — no ML at all. On the full `report_2022.pdf`:
+6.2 seconds versus Docling's 30+ minutes (and inability to finish on this
+machine). The cost is real too — chunking is cruder (no structure
+awareness) and at least one clearly non-useful image (a flat gradient
+background) got kept, since there's no classifier to catch it. That's the
+ColPali trade-off in miniature: strip out the ML, get speed, lose the
+judgment calls the ML was making.
