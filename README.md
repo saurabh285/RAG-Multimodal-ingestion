@@ -153,6 +153,21 @@ real reports, and end-to-end through Docker.
     `Accelerator device: 'cpu'`). The code already requests
     `AcceleratorDevice.AUTO`, so it will pick up a CUDA GPU automatically if
     the reviewer's environment has one — no code change needed.
+  - **There are also non-GPU ways to speed this up, each with a real cost:**
+    - Switch Docling's table model to "fast" mode instead of "accurate" —
+      meaningfully quicker, but weaker table structure on exactly the
+      financial tables this document type is full of. I chose not to make
+      this trade for a URD.
+    - Use a lighter parser (e.g. plain PyMuPDF/pypdf text extraction)
+      instead of Docling — very fast, but loses table structure entirely
+      (rows/columns collapse into flat text) and loses the clean image
+      bounding boxes Step 2 depends on. This is the trade-off discussed in
+      more detail earlier in the project.
+    - Sample a subset of pages instead of the full document — fast, but
+      it's no longer a real validation of the whole report, just a spot
+      check.
+    None of these were applied to the actual pipeline; they're noted here
+    as known, deliberately-declined options, not hidden gaps.
   - **Given the 5-6 hour assessment time budget and this compute
     constraint**, I validated the full pipeline end-to-end against one
     complete report (`report_2022.pdf`, 674 pages) rather than all four —
