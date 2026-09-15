@@ -78,10 +78,9 @@ out the ML, get speed, lose the judgment calls the ML was making. (See the
 README's "Known limitations" for the full compute story — no GPU was
 available while building this, which shaped what I could validate.)
 
-My take: keep the current pipeline as the main path, since most of a URD is
-well-structured text. But I'd consider a ColPali-style index as a
-*secondary*, specialized retrieval path just for pages that are
-chart/infographic-heavy — flag those pages during ingestion (e.g. high
-image-to-text ratio, or using the same picture classifier already in this
-pipeline to detect chart-dense pages) and route them to a page-image index
-instead of, or in addition to, normal chunking.
+I'd keep the current pipeline as the main path, since most of a URD is
+well-structured text. Where I'd actually reach for ColPali is as a
+*secondary*, specialized retrieval path just for the chart/infographic-heavy
+pages — flag those during ingestion (high image-to-text ratio, or the same
+picture classifier already in this pipeline) and route them to a page-image
+index instead of, or alongside, normal chunking.
