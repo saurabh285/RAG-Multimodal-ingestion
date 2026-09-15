@@ -75,3 +75,11 @@ chart/infographic-heavy — flag those pages during ingestion (e.g. high
 image-to-text ratio, or using the same picture classifier already in this
 pipeline to detect chart-dense pages) and route them to a page-image index
 instead of, or in addition to, normal chunking.
+
+On the compute point specifically: everything above assumes GPU-backed
+inference is available. I developed this on an 8GB Mac with no dedicated
+GPU, and a full report already takes ~30+ minutes on CPU with the current
+(comparatively lighter) pipeline — a ColPali-style approach, which runs a
+VLM over every page image, would be considerably more expensive still on
+the same hardware. See the README's "Known limitations" section for how
+that constraint shaped what I could actually validate here.

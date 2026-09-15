@@ -143,6 +143,29 @@ real reports, and end-to-end through Docker.
   HTTP request at all — it'd be a background job that returns a "processing"
   status immediately. That's out of scope here since the assessment asks for
   a direct synchronous response, but worth naming plainly.
+  - **A GPU would help.** Docling's layout, table-structure, and picture
+    classification models all run through PyTorch and support CUDA. On a
+    machine with a real GPU (and Docker configured to pass it through), this
+    runtime would drop meaningfully. I don't have that hardware available —
+    developed this on an 8GB Apple Silicon Mac, and Docker Desktop's Linux VM
+    doesn't have GPU passthrough to Apple's MPS backend at all, so the
+    containerized app always runs on CPU regardless (confirmed in the logs:
+    `Accelerator device: 'cpu'`). The code already requests
+    `AcceleratorDevice.AUTO`, so it will pick up a CUDA GPU automatically if
+    the reviewer's environment has one — no code change needed.
+  - **Given the 5-6 hour assessment time budget and this compute
+    constraint**, I validated the full pipeline end-to-end against one
+    complete report (`report_2022.pdf`, 674 pages) rather than all four —
+    running all four sequentially would be another 2-3 hours with no
+    additional signal, since it's the same code path against similarly
+    structured documents. That result is in this repo for verification (see
+    below). I'd expect the other three to behave the same way.
+  - **Memory matters too.** A full-report run pushed Docker's default memory
+    allocation on this machine (3.8GB) into an OOM kill on the first attempt.
+    I reduced `images_scale` and thread count to bring peak memory down, but
+    if the reviewer's Docker has a similarly low memory limit, allocating at
+    least ~4-6GB to Docker Desktop (Settings → Resources → Memory) is worth
+    doing before ingesting a full report.
 - **Logo filtering is a heuristic, not perfect.** Repeated logos (headers,
   footers, cover branding used many times) are reliably caught by a
   duplicate-image check. A one-off logo that only appears once in the whole

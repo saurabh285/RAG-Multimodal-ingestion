@@ -23,11 +23,11 @@ class ParsedChunk:
 def convert(pdf_path: str):
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = False
-    pipeline_options.images_scale = 2.0
+    pipeline_options.images_scale = 1.0
     pipeline_options.generate_picture_images = True
     pipeline_options.do_picture_classification = True
     pipeline_options.accelerator_options = AcceleratorOptions(
-        num_threads=8, device=AcceleratorDevice.AUTO
+        num_threads=4, device=AcceleratorDevice.AUTO
     )
 
     converter = DocumentConverter(
