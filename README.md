@@ -29,8 +29,8 @@ the easiest way to try it) are at `http://localhost:8000/docs`.
 ### Quick sanity check (recommended first)
 
 A full report in `knowledge/` is 300-700+ pages and takes **~30+ minutes** to
-ingest (see "Why ingestion is slow" below) — not something you want to wait
-on just to check the app works. Use the small 15-page sample instead:
+ingest (see "Known limitations" below) — not something you want to wait on
+just to check the app works. Use the small 15-page sample instead:
 
 ```bash
 curl -X POST http://localhost:8000/ingest \
@@ -98,12 +98,39 @@ light and makes swapping in S3 later a backend change, not a schema change
 
 ## Testing
 
-There's no automated test suite. Given the scope of this assessment, I
-tested by ingesting reports through `/docs` and checking the DB rows and the
-debug HTML by hand at each stage (text-only, then images, then the viewer),
-plus a full end-to-end run through Docker. That was a deliberate choice
-given the time budget, not an oversight — happy to add pytest coverage if
-that's expected.
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+Runs unit tests for the image noise/duplicate filtering and page-to-chunk
+association logic, plus an endpoint smoke test (health check, PDF-type
+rejection, year-range validation, and a real ingest against a tiny 2-page
+fixture). Tests use an isolated SQLite file, not the real Postgres database,
+so they don't need Docker running.
+
+This isn't exhaustive coverage — there's no test against a full real report
+(that's covered separately, manually, given the ~30 min runtime), and no
+test asserting exact chunk boundaries. It covers the logic most likely to
+have silent bugs: filtering decisions and page/chunk matching.
+
+Beyond the automated tests, I also verified the full pipeline by hand at
+each build stage (text-only, then images, then the debug viewer) against
+real reports, and end-to-end through Docker.
+
+## Error handling & observability
+
+- If image extraction fails partway through, ingestion still completes with
+  text-only chunks rather than failing the whole request — a parsing
+  problem with pictures shouldn't lose the text that already parsed fine.
+  A single bad image (e.g. a disk write failure) is skipped the same way,
+  logged, and doesn't take down the rest of the batch.
+- `year` is validated to a sane range (1900-2100) and there's a max upload
+  size, so obviously bad input is rejected with a 400/422 instead of being
+  silently accepted or crashing deep in the pipeline.
+- The app logs progress (pages parsed, chunk count, images kept vs.
+  filtered) and logs full tracebacks on failure via Python's `logging`
+  module, rather than only surfacing a bare error string to the client.
 
 ## Known limitations
 

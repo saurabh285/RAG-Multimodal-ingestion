@@ -1,7 +1,10 @@
 import hashlib
+import logging
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 MIN_DIMENSION_PX = 100
 MAX_ASPECT_RATIO = 15
@@ -17,6 +20,7 @@ class ExtractedImage:
 
 
 def extract_images(doc) -> list[ExtractedImage]:
+    total = len(doc.pictures)
     candidates = []
     for picture in doc.pictures:
         pil_image = picture.get_image(doc)
@@ -27,7 +31,14 @@ def extract_images(doc) -> list[ExtractedImage]:
         page_no = picture.prov[0].page_no if picture.prov else 1
         candidates.append(ExtractedImage(page_no=page_no, image=pil_image))
 
-    return _drop_repeated_images(candidates)
+    kept = _drop_repeated_images(candidates)
+    logger.info(
+        "Image extraction: %d found, %d passed noise filter, %d kept after duplicate filter",
+        total,
+        len(candidates),
+        len(kept),
+    )
+    return kept
 
 
 def _is_small_or_thin(image) -> bool:
@@ -75,7 +86,11 @@ def save_images(
     saved = []
     for index, extracted in enumerate(images):
         path = out_dir / f"image_{index}.png"
-        extracted.image.save(path)
+        try:
+            extracted.image.save(path)
+        except OSError:
+            logger.exception("Skipping image %d for document %d: failed to save", index, document_id)
+            continue
         saved.append((extracted.page_no, str(path)))
     return saved
 

@@ -1,16 +1,37 @@
+import logging
 import shutil
 import tempfile
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import Base, engine, get_db
 from app.models import Chunk, Document
 from app import debug_view, images, parser
 
-app = FastAPI(title="MultiModal RAG Ingestion")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-Base.metadata.create_all(bind=engine)
+MAX_UPLOAD_BYTES = 300 * 1024 * 1024
+
+
+class IngestResponse(BaseModel):
+    document_id: int
+    filename: str
+    year: int
+    total_pages: int
+    chunk_count: int
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(title="MultiModal RAG Ingestion", lifespan=lifespan)
 
 
 @app.get("/health")
@@ -18,10 +39,10 @@ def health():
     return {"status": "ok"}
 
 
-@app.post("/ingest")
+@app.post("/ingest", response_model=IngestResponse)
 def ingest(
     file: UploadFile = File(...),
-    year: int = Form(...),
+    year: int = Form(..., ge=1900, le=2100),
     debug: bool = Form(False),
     db: Session = Depends(get_db),
 ):
@@ -32,14 +53,30 @@ def ingest(
         shutil.copyfileobj(file.file, tmp)
         tmp.flush()
 
+        if tmp.tell() > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=400, detail="File too large")
+
+        logger.info("Ingest starting: filename=%s year=%s", file.filename, year)
+
         try:
             doc = parser.convert(tmp.name)
             parsed_chunks = parser.build_chunks(doc)
+        except Exception:
+            logger.exception("Failed to parse %s", file.filename)
+            raise HTTPException(status_code=500, detail="Failed to parse PDF")
+
+        logger.info(
+            "Parsed %d pages into %d chunks", doc.num_pages(), len(parsed_chunks)
+        )
+
+        try:
             extracted_images = images.extract_images(doc)
-        except Exception as exc:
-            raise HTTPException(
-                status_code=500, detail=f"Failed to parse PDF: {exc}"
+        except Exception:
+            logger.exception(
+                "Image extraction failed for %s, continuing with text-only chunks",
+                file.filename,
             )
+            extracted_images = []
 
     document = Document(
         filename=file.filename, year=year, total_pages=doc.num_pages()
@@ -69,10 +106,18 @@ def ingest(
             db.refresh(row)
         debug_view.render_debug_html(document.id, document.filename, chunk_rows)
 
-    return {
-        "document_id": document.id,
-        "filename": document.filename,
-        "year": document.year,
-        "total_pages": document.total_pages,
-        "chunk_count": len(parsed_chunks),
-    }
+    logger.info(
+        "Ingest complete: document_id=%d filename=%s chunks=%d images_saved=%d",
+        document.id,
+        document.filename,
+        len(parsed_chunks),
+        len(saved_images),
+    )
+
+    return IngestResponse(
+        document_id=document.id,
+        filename=document.filename,
+        year=document.year,
+        total_pages=document.total_pages,
+        chunk_count=len(parsed_chunks),
+    )
