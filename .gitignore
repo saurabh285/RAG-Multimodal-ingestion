@@ -3,3 +3,6 @@ __pycache__/
 .venv/
 data/
 .env
+.DS_Store
+docs/
+Take_Home_Assessment_*.pdf
