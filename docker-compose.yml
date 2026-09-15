@@ -10,5 +10,18 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  api:
+    build: .
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://rag:rag@db:5432/rag
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./knowledge:/app/knowledge
+      - ./samples:/app/samples
+
 volumes:
   pgdata:
