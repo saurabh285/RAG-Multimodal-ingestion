@@ -68,6 +68,16 @@ with it outright:
   pass over a 600+ page report would be a significant cost multiplier on
   top of that.
 
+To make the speed/fidelity trade-off concrete rather than hypothetical, I
+built a throwaway comparison pipeline (`experiments/lightweight_pipeline.py`,
+plain PyMuPDF, no ML) and ran it against the same full report: 6 seconds
+versus Docling's 30+ minutes — but cruder chunking and at least one
+clearly useless image (a flat background swatch) kept, since there's no
+classifier to catch it. That's the ColPali trade-off in miniature: strip
+out the ML, get speed, lose the judgment calls the ML was making. (See the
+README's "Known limitations" for the full compute story — no GPU was
+available while building this, which shaped what I could validate.)
+
 My take: keep the current pipeline as the main path, since most of a URD is
 well-structured text. But I'd consider a ColPali-style index as a
 *secondary*, specialized retrieval path just for pages that are
@@ -75,13 +85,3 @@ chart/infographic-heavy — flag those pages during ingestion (e.g. high
 image-to-text ratio, or using the same picture classifier already in this
 pipeline to detect chart-dense pages) and route them to a page-image index
 instead of, or in addition to, normal chunking.
-
-To make the speed/fidelity trade-off concrete rather than hypothetical, I
-built a throwaway comparison pipeline (`experiments/lightweight_pipeline.py`,
-plain PyMuPDF, no ML) and ran it against the same full report: 6 seconds
-versus Docling's 30+ minutes — but cruder chunking and at least one
-clearly useless image (a flat background swatch) kept, since there's no
-classifier to catch it. That's the ColPali trade-off in miniature: strip
-out the ML, get speed, lose the judgment calls the ML was making. See the
-README's "Known limitations" for the full compute story (no GPU available
-while building this, and what that meant for validation).
