@@ -71,6 +71,11 @@ With `debug=true`, a file is also written to `data/debug/{document_id}.html`
 — open it in a browser to see every chunk with its page numbers and any
 images attached to it.
 
+The numbers above are real (from parsing `report_2022.pdf`), but see "Memory
+is the real wall on this machine" under **Known limitations** — I could not
+get the full multimodal pipeline to complete end-to-end on a full report
+within this machine's available memory, only the text-only parsing stage.
+
 ## Database schema
 
 **documents**
@@ -168,19 +173,38 @@ real reports, and end-to-end through Docker.
       check.
     None of these were applied to the actual pipeline; they're noted here
     as known, deliberately-declined options, not hidden gaps.
-  - **Given the 5-6 hour assessment time budget and this compute
-    constraint**, I validated the full pipeline end-to-end against one
-    complete report (`report_2022.pdf`, 674 pages) rather than all four —
-    running all four sequentially would be another 2-3 hours with no
-    additional signal, since it's the same code path against similarly
-    structured documents. That result is in this repo for verification (see
-    below). I'd expect the other three to behave the same way.
-  - **Memory matters too.** A full-report run pushed Docker's default memory
-    allocation on this machine (3.8GB) into an OOM kill on the first attempt.
-    I reduced `images_scale` and thread count to bring peak memory down, but
-    if the reviewer's Docker has a similarly low memory limit, allocating at
-    least ~4-6GB to Docker Desktop (Settings → Resources → Memory) is worth
-    doing before ingesting a full report.
+  - **Memory is the real wall on this machine, not just time.** A full
+    674-page report pushed Docker's default memory allocation here (3.8GB)
+    into an OOM kill. I reduced `images_scale` (2.0→1.0) and thread count
+    (8→4) to lower peak memory, which helped meaningfully — the retry got
+    ~18 minutes in (vs. ~3 minutes before) with no errors — but it still
+    hit the ceiling eventually, because Docling appears to hold data for
+    every processed page in memory for the whole document rather than
+    releasing it as it goes, and this report is long enough that it adds up
+    regardless of per-page tuning. I did **not** get a full report to
+    complete end-to-end inside this machine's Docker limit. Text-only
+    parsing of a full report (no images/classifier) did complete earlier,
+    natively outside Docker, in ~33 minutes — so the parsing/chunking logic
+    itself is proven correct at full scale; it's specifically the combined
+    memory cost of images + picture classification over 600+ pages that
+    doesn't fit in 3.8GB. If the reviewer's Docker has more headroom (I'd
+    guess ~6GB+), a full report should go through fine.
+  - **I also tried a genuinely lightweight alternative, to see the trade-off
+    for real rather than guess at it:** plain PyMuPDF text extraction (no
+    layout model, no ML at all) processed all 4 full reports in **~18
+    seconds combined** (vs. 30+ minutes each for Docling) at **~110MB peak
+    memory** (vs. multiple GB). That confirms Docling's cost is real and
+    specific to its ML pipeline, not an inefficiency in this code. But the
+    quality drop is concrete, not theoretical — raw PyMuPDF text from the
+    same table-of-contents page that Docling (imperfectly) associates as
+    `"1.1, 1 = TotalEnergies at a glance..."` comes out as three disconnected
+    blocks of numbers, titles, and page numbers with no way to tell which
+    belongs to which, since PyMuPDF has no concept of table structure at
+    all. I kept Docling as the actual pipeline because that structure
+    matters for a document this table-heavy — but on this hardware, that
+    choice comes at a real, hit-the-ceiling cost, and I'd rather say that
+    plainly than imply the full pipeline was validated at full scale when
+    it wasn't.
 - **Logo filtering is a heuristic, not perfect.** Repeated logos (headers,
   footers, cover branding used many times) are reliably caught by a
   duplicate-image check. A one-off logo that only appears once in the whole
